@@ -1,0 +1,147 @@
+package com.lambda.borme_processor.service
+
+import com.lambda.borme_processor.entity.BormePublication
+import com.lambda.borme_processor.entity.Company
+import com.lambda.borme_processor.repository.BormePublicationRepository
+import com.lambda.borme_processor.repository.CompanyRepository
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+
+import java.time.LocalDate
+
+/**
+ * Servicio para manejar la persistencia de datos relacionados con el BORME.
+ * Incluye operaciones para guardar publicaciones y compañías, así como consultas.
+ */
+@Service
+class PersistenceService {
+
+    @Autowired
+    private BormePublicationRepository publicationRepository
+
+    @Autowired
+    private CompanyRepository companyRepository
+
+    /**
+     * Guarda los datos del BORME en la base de datos.
+     * @param fileName Nombre del fichero PDF.
+     * @param publicationDate Fecha de publicación del BORME.
+     * @param fileUrl URL o ruta del fichero PDF.
+     * @param companies Lista de compañías extraídas del PDF.
+     */
+    @Transactional
+    // Asegura que toda la operación sea atómica.
+    void saveBormeData(String fileName, LocalDate publicationDate, String fileUrl, List<Company> companies) {
+        println "[LOGÍSTICA] Iniciando protocolo de persistencia para el fichero: $fileName"
+
+        // 1. Crear y guardar el registro de la publicación
+        BormePublication publication = new BormePublication(
+                publicationDate: publicationDate,
+                fileName: fileName,
+                pdfPath: fileUrl
+        )
+
+        BormePublication savedPublication = publicationRepository.save(publication)
+        println "[LOGÍSTICA] Publicación registrada con ID: ${savedPublication.id}"
+
+        // 2. Vincular cada compañía a la publicación y guardarlas
+        companies.each { company ->
+            company.publication = savedPublication
+        }
+        companyRepository.saveAll(companies)
+        println "[LOGÍSTICA] ${companies.size()} registros de compañía persistidos con éxito."
+    }
+
+    /**
+     * Encuentra compañías por fecha de publicación. Devuelve ENTIDADES.
+     * @param pageable    Parámetros de paginación (página y tamaño de resultados).
+     * @return    Todas las compañias paginadas para un día concreto
+     */
+    Page<Company> findCompaniesByDate(LocalDate date, Pageable pageable) {
+        return companyRepository.findByPublicationPublicationDate(date, pageable)
+    }
+
+    /**
+     * Encuentra todas las compañías. Devuelve ENTIDADES.
+     * @param pageable    Parámetros de paginación (página y tamaño de resultados).
+     * @return    Todas las compañías paginadas
+     */
+    Page<Company> findAllCompanies(Pageable pageable) {
+        return companyRepository.findAll(pageable)
+    }
+
+    /**
+     * Encuentra una compañía por su ID. Devuelve una ENTIDAD.
+     * @param id ID de la compñia a encontrar
+     * @return    La compañia correspondiente a ese ID
+     */
+    Optional<Company> findCompanyById(Long id) {
+        return companyRepository.findById(id)
+    }
+
+    /**
+     * Encuentra todas las publicaciones. Devuelve ENTIDADES.
+     * @param pageable    Parámetros de paginación (página y tamaño de resultados).
+     * @return    Todas las publicaciones paginadas
+     */
+    Page<BormePublication> findAllPublications(Pageable pageable) {
+        return publicationRepository.findAll(pageable)
+    }
+
+    /**
+     * Cuenta el total de compañías.
+     * @return    La cantidad total de compañías.
+     */
+    Long countTotalCompanies() {
+        return companyRepository.count()
+    }
+
+    /**
+     * Cuenta el total de publicaciones.
+     * @return    La cantidad total de publicaciones.
+     */
+    Long countTotalPublications() {
+        return publicationRepository.count()
+    }
+
+    /**
+     * Encuentra la fecha de la publicación más reciente.
+     * @return    Fecha de publicación del ultimo documento .
+     */
+    Optional<LocalDate> findLatestPublicationDate() {
+        Optional<BormePublication> latestPublicationOptional = publicationRepository.findTopByOrderByPublicationDateDesc()
+        return latestPublicationOptional.map({ publication -> publication.getPublicationDate() })
+    }
+
+    /**
+     * Busca compañías que cumplan con los filtros especificados.
+     * Permite realizar consultas dinámicas por nombre, administrador, socio único
+     * y por rango de fechas de publicación. Devuelve los resultados paginados.
+     *
+     * @param name        Nombre (o parte del nombre) de la compañía a buscar.
+     * @param admin       Nombre del administrador asociado.
+     * @param solePartner Nombre del socio único asociado.
+     * @param startDate   Fecha inicial del rango de publicación (inclusive).
+     * @param endDate     Fecha final del rango de publicación (inclusive).
+     * @param pageable    Parámetros de paginación (página y tamaño de resultados).
+     * @return            Página de compañías que coinciden con los filtros aplicados.
+     */
+    Page<Company> searchCompaniesWithMetadata(
+            String name,
+            String admin,
+            String solePartner,
+            LocalDate startDate,
+            LocalDate endDate,
+            Pageable pageable
+    ) {
+        return companyRepository.searchCompanies(name, admin, solePartner, startDate, endDate, pageable)
+    }
+
+    /**
+     * Obtener publicaciones con metadata completa.
+     */
+
+}
