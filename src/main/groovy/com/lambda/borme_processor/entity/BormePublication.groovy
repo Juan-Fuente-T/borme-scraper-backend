@@ -33,13 +33,13 @@ class BormePublication {
     BormePublication() {}
 
     // --- GETTERS FORJADOS A MANO ---
-    public Long getId() { return id }
+    Long getId() { return id }
 
-    public LocalDate getPublicationDate() { return publicationDate }
+    LocalDate getPublicationDate() { return publicationDate }
 
-    public String getFileName() { return fileName }
+    String getFileName() { return fileName }
 
-    public String getFileUrl() { return pdfPath }
+    String getFileUrl() { return pdfPath }
 
-    public OffsetDateTime getProcessedAt() { return processedAt }
+    OffsetDateTime getProcessedAt() { return processedAt }
 }

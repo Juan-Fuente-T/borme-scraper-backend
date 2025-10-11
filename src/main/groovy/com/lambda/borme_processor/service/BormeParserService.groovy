@@ -2,6 +2,8 @@ package com.lambda.borme_processor.service
 
 import com.lambda.borme_processor.entity.Company
 import org.springframework.stereotype.Service
+
+import java.time.LocalDateTime
 import java.util.regex.Pattern
 
 @Service
@@ -114,7 +116,7 @@ class BormeParserService {
                 company.registryData = clean(mReg.group(1))
             }
 
-            company.createdAt = java.time.LocalDateTime.now()
+            company.createdAt = LocalDateTime.now()
 
             if (company.bormeId != null && !company.bormeId.isBlank()) {
                 companies << company
@@ -137,7 +139,7 @@ class BormeParserService {
      * Limpia un texto eliminando espacios o puntuación sobrante al final.
      * Aplica a cualquier campo textual del BORME.
      */
-    private String clean(String text) {
+    private static String clean(String text) {
         if (!text) return null
         return text
                 .replaceAll(/[ \t\n\r]+$/, '')  // limpia espacios finales

@@ -13,8 +13,6 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import java.time.LocalDate
-import org.springframework.data.domain.PageRequest
-import com.lambda.borme_processor.util.PageableBuilder
 
 @Service
 class BormeProcessorService {

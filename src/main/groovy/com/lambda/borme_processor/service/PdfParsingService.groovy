@@ -14,7 +14,7 @@ class PdfParsingService {
      * @param pdfFile Fichero PDF desde el cual extraer el texto.
      * @return Texto completo extraído, con saltos de línea preservados.
      */
-    String extractTextFromFile(File pdfFile) {
+    static String extractTextFromFile(File pdfFile) {
         println "[UNIDAD DE ANÁLISIS] Procesando activo: ${pdfFile.name}"
         PDDocument document = null
         try {

@@ -1,60 +1,60 @@
 package com.lambda.borme_processor.entity
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import groovy.transform.Canonical;
-import jakarta.persistence.*;
-import lombok.Data;
+import groovy.transform.Canonical
+import jakarta.persistence.*
+import lombok.Data
 
-import java.time.LocalDateTime;
+import java.time.LocalDateTime
 
 @Entity
 @Table(name = "company")
 //@Data
 //@Canonical // <-- Reemplaza a @Data. Es idiomático en Groovy.
-public class Company {
+class Company {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long id
 
     @Column(name = "borme_id", nullable = false)
-    private String bormeId;
+    private String bormeId
 
     @Column(name = "name", nullable = false)
-    private String name;
+    private String name
 
     @Column(name = "act_type")
-    private String actType;
+    private String actType
 
     @Column(name = "start_date")
-    private String startDate;
+    private String startDate
 
     @Column(name = "object")
-    private String object;
+    private String object
 
     @Column(name = "address")
-    private String address;
+    private String address
 
     @Column(name = "capital")
-    private String capital;
+    private String capital
 
     @Column(name = "capital_numeric")
-    private Long capitalNumeric; // El valor numérico en céntimos
+    private Long capitalNumeric // El valor numérico en céntimos
 
     @Column(name = "sole_partner")
-    private String solePartner;
+    private String solePartner
 
     @Column(name = "admin")
-    private String admin;
+    private String admin
 
     @Column(name = "registry_data")
-    private String registryData;
+    private String registryData
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now()
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "publication_id", nullable = false) // Clave foránea
-    BormePublication publication;
+    BormePublication publication
 
     // --- CONSTRUCTOR VACÍO (Requerido por JPA) ---
     Company() {}
