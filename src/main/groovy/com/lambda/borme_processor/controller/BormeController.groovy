@@ -82,12 +82,16 @@ class BormeController {
      * Obtiene TODAS las empresas (paginado).
      * GET /api/borme/companies/all?page=0&size=20
      */
+    //@GetMapping("/companies/all")
+    //    ResponseEntity<PaginatedCompaniesDTO> getAllCompanies(
+    //            @RequestParam(value = "page", defaultValue = "0") int page,
+    //            @RequestParam(value = "size", defaultValue = "20") int size
+    //    ) {
     @GetMapping("/companies/all")
     ResponseEntity<PaginatedCompaniesDTO> getAllCompanies(
-            @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "size", defaultValue = "20") int size
+            @PageableDefault(page = 0, size = 20, sort = "startDate", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        PaginatedCompaniesDTO response = processorService.getAllCompaniesWithMetadata(page, size)
+        PaginatedCompaniesDTO response = processorService.findAllCompanies(pageable)
         return ResponseEntity.ok(response)
     }
 

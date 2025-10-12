@@ -41,7 +41,7 @@ class BormeProcessorService {
      * @return Un`ProcessingResultDTO` que contiene el resultado de procesar el Borme para esa fecha.
      */
     ProcessingResultDTO processBormeForDate(LocalDate date) {
-        println "[MANDO] Iniciando operación para la fecha: $date"
+        println "Iniciando operación para la fecha: $date"
 
         // Scraper, adquiera los activos.
         def downloadedFiles = scraperService.scrapeAndDownloadPdfs(date)
@@ -81,7 +81,7 @@ class BormeProcessorService {
             totalCompaniesFound += companies.size()
         }
 
-        println "[MANDO] Operación completada para la fecha: $date"
+        println "Operación completada para la fecha: $date"
 
         // Construye el DTO de resultado con toda la inteligencia recopilada.
         return new ProcessingResultDTO(
@@ -94,17 +94,26 @@ class BormeProcessorService {
         )
     }
     /**
-     * Obtiene todas las compañías y las convierte a DTOs.
-     */
-    /**
-     * Retrieves all companies and converts them to DTOs.
+     * Obtiene y empaqueta una respuesta paginada de todas las compañías.
      *
      * @param pageable Los parametros de paginacion
-     * @return Una lista de objetos `CompanyDTO` con datos de compañias.
+     * @return Una CTO que contiene la respuesta paginada completa.
      */
-    Page<CompanyDTO> findAllCompanies(Pageable pageable) {
+    //Page<CompanyDTO> findAllCompanies(Pageable pageable) {
+    PaginatedCompaniesDTO findAllCompanies(Pageable pageable) {
         Page<Company> companyPage = persistenceService.findAllCompanies(pageable)
-        return companyPage.map { company -> convertToDto(company) }
+        //return companyPage.map { company -> convertToDto(company) }
+        def companyDTOs = companyPage.content.collect { company -> convertToDto(company) }
+
+        // 3. Construye el informe de misión final y completo.
+        return new PaginatedCompaniesDTO(
+                success: true,
+                total: companyPage.totalElements,
+                totalPages: companyPage.totalPages,
+                currentPage: pageable.getPageNumber(),
+                pageSize: pageable.getPageSize(),
+                companies: companyDTOs
+        )
     }
 
     /**
