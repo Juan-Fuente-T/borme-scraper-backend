@@ -40,44 +40,53 @@ class BormeController {
     ResponseEntity<ProcessingResultDTO> processBorme(
             @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
-        try {
             ProcessingResultDTO result = processorService.processBormeForDate(date)
             return ResponseEntity.ok(result)
-        } catch (Exception e) {
-            def errorResult = new ProcessingResultDTO(
-                    success: false, message: "Error interno del servidor: ${e.message}", date: date
-            )
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResult)
-        }
     }
 
 
     /**
      * Obtiene empresas de una fecha específica (paginado).
+
+     */
+    //@GetMapping("/companies")
+    //    ResponseEntity<PaginatedCompaniesDTO> getCompaniesByDate(
+    //            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+    //            @RequestParam(value = "page", defaultValue = "0") int page,
+    //            @RequestParam(value = "size", defaultValue = "20") int size
+    //    ) {
+    //        try {
+    //            Pageable pageable = PageRequest.of(page, size)
+    //            Page<CompanyDTO> companiesPage = processorService.findCompaniesByDate(date, pageable)
+    //
+    //            def response = new PaginatedCompaniesDTO(
+    //                    success: true, total: companiesPage.totalElements, totalPages: companiesPage.totalPages,
+    //                    currentPage: page, pageSize: size, companies: companiesPage.content
+    //            )
+    //            return ResponseEntity.ok(response)
+    //
+    //        } catch (Exception e) {
+    //            def errorResponse = new PaginatedCompaniesDTO(success: false, message: "Error al consultar: ${e.message}")
+    //            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse)
+    //        }
+    //    }
+
+    /**
+     * Obtiene y empaqueta una respuesta paginada de compañías para una fecha específica.
      * GET /api/borme/companies?date=2025-09-01&page=0&size=20
+     * @param date La fecha de la publicación.
+     * @param pageable Los parámetros de paginación.
+     * @return Un DTO que contiene la respuesta paginada completa.
      */
     @GetMapping("/companies")
     ResponseEntity<PaginatedCompaniesDTO> getCompaniesByDate(
             @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-            @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "size", defaultValue = "20") int size
+            // Spring construye el Pageable a partir de los parámetros ?page, ?size y ?sort.
+            Pageable pageable
     ) {
-        try {
-            Pageable pageable = PageRequest.of(page, size)
-            Page<CompanyDTO> companiesPage = processorService.findCompaniesByDate(date, pageable)
-
-            def response = new PaginatedCompaniesDTO(
-                    success: true, total: companiesPage.totalElements, totalPages: companiesPage.totalPages,
-                    currentPage: page, pageSize: size, companies: companiesPage.content
-            )
-            return ResponseEntity.ok(response)
-
-        } catch (Exception e) {
-            def errorResponse = new PaginatedCompaniesDTO(success: false, message: "Error al consultar: ${e.message}")
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse)
-        }
+        PaginatedCompaniesDTO response = processorService.findCompaniesByDate(date, pageable)
+        return ResponseEntity.ok(response)
     }
-
     /**
      * Obtiene TODAS las empresas (paginado).
      * GET /api/borme/companies/all?page=0&size=20
@@ -102,12 +111,12 @@ class BormeController {
     @GetMapping("/companies/{id}")
     ResponseEntity<?> getCompanyById(@PathVariable("id") Long id) {
         Optional<CompanyDTO> companyDtoOptional = processorService.findCompanyById(id)
-
-        if (companyDtoOptional.isPresent()) {
-            return ResponseEntity.ok(companyDtoOptional.get())
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body([success: false, message: "Empresa no encontrada"])
-        }
+        return ResponseEntity.ok(companyDtoOptional.get())
+        //if (companyDtoOptional.isPresent()) {
+        //            return ResponseEntity.ok(companyDtoOptional.get())
+        //        } else {
+        //            return ResponseEntity.status(HttpStatus.NOT_FOUND).body([success: false, message: "Empresa no encontrada"])
+        //        }
     }
 
 
@@ -130,26 +139,6 @@ class BormeController {
         return ResponseEntity.ok(response)
     }
 
-/**
- * Endpoint para listar todas las publicaciones procesadas con paginación.
- */
-    @GetMapping("/publications")
-    ResponseEntity<PaginatedPublicationsDTO> getPublications(
-            // Anotación para establecer valores por defecto si no vienen en la URL.
-            @PageableDefault(page = 0, size = 30, sort = "publicationDate", direction = Sort.Direction.DESC)
-                    Pageable pageable
-    ) {
-        // Da la orden al servicio que finalmente llama al repository
-        PaginatedPublicationsDTO response = processorService.findAllPublications(pageable)
-
-        return ResponseEntity.ok(response)
-        //if (response.success) {
-        //            return ResponseEntity.ok(response)
-        //        } else {
-        //            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response)
-        //        }
-    }
-
     /**
      * Endpoint para listar todas las publicaciones procesadas con paginación.
      *
@@ -168,6 +157,31 @@ class BormeController {
      *         - pageSize: Tamaño de la página.
      *         - publications: Lista de publicaciones en la página actual.
      */
+    @GetMapping("/publications")
+    ResponseEntity<PaginatedPublicationsDTO> getPublications(
+            // Anotación para establecer valores por defecto si no vienen en la URL.
+            @PageableDefault(page = 0, size = 30, sort = "publicationDate", direction = Sort.Direction.DESC)
+                    Pageable pageable
+    ) {
+        // Da la orden al servicio que finalmente llama al repository
+        PaginatedPublicationsDTO response = processorService.findAllPublications(pageable)
+
+        return ResponseEntity.ok(response)
+        //if (response.success) {
+        //            return ResponseEntity.ok(response)
+        //        } else {
+        //            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response)
+        //        }
+    }
+
+    /**
+     * Endpoint para obtener el archivo PDF de una publicación específica.
+     *
+     * GET /api/borme/publications/proxy/{id}
+     * @param id El ID de la publicación cuyo PDF se desea obtener.
+     * @return Un `ResponseEntity` que contiene los bytes del archivo PDF y los encabezados HTTP correspondientes.
+     *         Si no se encuentra el archivo, devuelve un cuerpo nulo con el estado HTTP 200.
+     */
     @GetMapping("/publications/proxy/{id}")
     ResponseEntity<byte[]> getPublicationPdf(@PathVariable("id") Long id) {
         Optional<byte[]> pdfBytesOptional = processorService.getPublicationPdfBytes(id)
@@ -179,21 +193,11 @@ class BormeController {
     }
 
     /**
-     * Lista todas las publicaciones (PDFs procesados) con paginación.
-     * GET /api/borme/publications?page=0&size=20
-
-     @GetMapping ("/publications")
-      ResponseEntity<PaginatedPublicationsDTO> getPublications(
-     @RequestParam (value = "page", defaultValue = "0") int page,
-     @RequestParam (value = "size", defaultValue = "20") int size,
-     @RequestParam (value = "sortOrder", defaultValue = "desc") String sortOrder
-      ) {
-      def response = processorService.findAllPublications(page, size, sortOrder)
-      return PaginatedCompaniesDTO.ok(response)}
-     */
-    /**
-     * Obtiene estadísticas generales.
+     * Endpoint para obtener estadísticas generales del sistema.
+     *
      * GET /api/borme/stats
+     * @return Un `ResponseEntity` que contiene un objeto `StatsDTO` con las estadísticas generales si la operación es exitosa.
+     *         En caso de error, devuelve un `StatsDTO` con un mensaje de error y el estado HTTP 500 (Error interno del servidor).
      */
     @GetMapping("/stats")
     ResponseEntity<StatsDTO> getStats() {

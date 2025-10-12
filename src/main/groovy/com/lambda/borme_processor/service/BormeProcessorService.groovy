@@ -43,7 +43,7 @@ class BormeProcessorService {
     ProcessingResultDTO processBormeForDate(LocalDate date) {
         println "Iniciando operación para la fecha: $date"
 
-        // Scraper, adquiera los activos.
+        // Scraper, adquiere los activos.
         def downloadedFiles = scraperService.scrapeAndDownloadPdfs(date)
 
         // Si no hay activos, abortar y reportar.
@@ -60,7 +60,7 @@ class BormeProcessorService {
         int totalCompaniesFound = 0
         List<String> collectedUrls = []
 
-        // 3. Procesar cada activo asegurado.
+        // Procesar cada activo.
         downloadedFiles.each { scrapedFile ->
             // Parser de PDF, extrae la inteligencia en bruto.
             String text = pdfParsingService.extractTextFromFile(scrapedFile.localFile)
@@ -117,18 +117,25 @@ class BormeProcessorService {
     }
 
     /**
-     * Obtiene compañías por fecha y las convierte a DTOs.
-     */
-    /**
-     * Retrieves companies by a specific date and converts them to DTOs.
-     *
+     * Obtiene y empaqueta una respuesta paginada de compañías para una fecha específica en DTOs.
      * @param date La fecha que se usará para encontrar las companias
      * @param pageable Los parametros de paginacion
      * @return Una lista de objetos `CompanyDTO` con datos de compañias.
      */
-    Page<CompanyDTO> findCompaniesByDate(LocalDate date, Pageable pageable) {
+    PaginatedCompaniesDTO findCompaniesByDate(LocalDate date, Pageable pageable) {
         Page<Company> companyPage = persistenceService.findCompaniesByDate(date, pageable)
-        return companyPage.map { company -> convertToDto(company) }
+
+        // Traduce entidades a DTOs.
+        def companyDTOs = companyPage.content.collect { company -> convertToDto(company) }
+
+        return new PaginatedCompaniesDTO(
+                success: true,
+                total: companyPage.totalElements,
+                totalPages: companyPage.totalPages,
+                currentPage: pageable.getPageNumber(),
+                pageSize: pageable.getPageSize(),
+                companies: companyDTOs
+        )
     }
 
     /**
@@ -141,8 +148,12 @@ class BormeProcessorService {
      * @return Un `Optional` conteniendo un `CompanyDTO` con datos de la compañia, si se ha encontrado, o vacio.
      */
     Optional<CompanyDTO> findCompanyById(Long id) {
-        Optional<Company> companyOptional = persistenceService.findCompanyById(id)
-        return companyOptional.map { company -> convertToDto(company) }
+        // Si no la encuentra, lanza una excepción.
+        Company company = persistenceService.findCompanyById(id)
+                .orElseThrow({ new ResourceNotFoundException("No se encontró la empresa con ID: ${id}") })
+
+        // Si la encuentra, la convierte a DTO y la devuelve.
+        return convertToDto(company)
     }
 
     /**
@@ -225,18 +236,18 @@ class BormeProcessorService {
      * @throws ResourceNotFoundException si la publicación con el ID especificado no se encuentra en la base de datos.
      * @throws IOException, MalformedURLException, etc. si ocurre un error durante la descarga del fichero desde la URL externa. Estas excepciones genéricas serán capturadas por el GlobalExceptionHandler.
      */
-    Optional<byte[]> getPublicationPdfBytes(Long id) {
-        Optional<BormePublication> publicationOptional = persistenceService.findPublicationById(id)
+    byte[] getPublicationPdfBytes(Long id) {
+        BormePublication publicationOptional = persistenceService.findPublicationById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la publicación con ID: " + id))
 
-        // Si el Optional está vacío se lanza una excepción específica para un HTTP 404.
-        if (publicationOptional.isEmpty()) {
-            throw new ResourceNotFoundException("No se encontró la publicación con ID: " + id)
-        }
         // Si la publicación existe, se intenta descargar el contenido desde su URL.
-        // Si falla lanzará una excepción genérica que el GlobalExceptionHandler convertirá en HTTP 500.
         byte[] pdfBytes = new URL(publicationOptional.get().getFileUrl()).bytes
 
-        return Optional.of(pdfBytes)
+        // Si falla lanza una excepción que el GlobalExceptionHandler convertirá en HTTP 500.
+        if (pdfBytes == null || pdfBytes.length == 0) {
+            throw new ResourceNotFoundException("El contenido del PDF para la publicación ID: ${id} no está disponible.")
+        }
+        return pdfBytes
     }
 
     /**
