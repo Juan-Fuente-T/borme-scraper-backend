@@ -13,5 +13,6 @@ class CompanyDTO {
     String solePartner
     String admin
     String registryData
+    String publicationFileUrl
     Long publicationId
 }

@@ -5,9 +5,26 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.context.request.WebRequest
+import com.lambda.borme_processor.exception.ResourceNotFoundException
+
 
 @ControllerAdvice
 class GlobalExceptionHandler {
+    /**
+     * Se activa cuando un servicio lanza una ResourceNotFoundException.
+     * Devuelve un código HTTP 404 claro y específico.
+     */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    static ResponseEntity<?> handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
+        def errorDetails = [
+                timestamp: new Date(),
+                status: HttpStatus.NOT_FOUND.value(),
+                error: "Not Found",
+                message: ex.getMessage(),
+                path: request.getDescription(false).substring(4)
+        ]
+        return new ResponseEntity<>(errorDetails, HttpStatus.NOT_FOUND)
+    }
 
     /**
      * Captura cualquier excepción genérica que no haya sido manejada

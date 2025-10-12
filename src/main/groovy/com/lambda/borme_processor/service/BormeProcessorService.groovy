@@ -8,11 +8,13 @@ import com.lambda.borme_processor.dto.ProcessingResultDTO
 import com.lambda.borme_processor.dto.StatsDTO
 import com.lambda.borme_processor.entity.BormePublication
 import com.lambda.borme_processor.entity.Company
+import com.lambda.borme_processor.exception.ResourceNotFoundException
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import java.time.LocalDate
+import java.net.URL
 
 @Service
 class BormeProcessorService {
@@ -206,6 +208,29 @@ class BormeProcessorService {
     }
 
     /**
+     * Obtiene el contenido binario (bytes) de un fichero PDF a partir del ID de su publicación.
+     * Este método actúa como un proxy, descargando el contenido desde la URL pública almacenada.
+     *
+     * @param id El ID de la BormePublication a procesar.
+     * @return Un Optional que contiene el array de bytes del PDF si la operación tiene éxito.
+     * @throws ResourceNotFoundException si la publicación con el ID especificado no se encuentra en la base de datos.
+     * @throws IOException, MalformedURLException, etc. si ocurre un error durante la descarga del fichero desde la URL externa. Estas excepciones genéricas serán capturadas por el GlobalExceptionHandler.
+     */
+    Optional<byte[]> getPublicationPdfBytes(Long id) {
+        Optional<BormePublication> publicationOptional = persistenceService.findPublicationById(id)
+
+        // Si el Optional está vacío se lanza una excepción específica para un HTTP 404.
+        if (publicationOptional.isEmpty()) {
+            throw new ResourceNotFoundException("No se encontró la publicación con ID: " + id)
+        }
+        // Si la publicación existe, se intenta descargar el contenido desde su URL.
+        // Si falla lanzará una excepción genérica que el GlobalExceptionHandler convertirá en HTTP 500.
+        byte[] pdfBytes = new URL(publicationOptional.get().getFileUrl()).bytes
+
+        return Optional.of(pdfBytes)
+    }
+
+    /**
      * Recopila y prepara las estadísticas generales de la aplicación.
      * @return Un DTO con las estadísticas compiladas.
      */
@@ -234,6 +259,7 @@ class BormeProcessorService {
      * @return El correspondiente`CompanyDTO`.
      */
     private static CompanyDTO convertToDto(Company company) {
+        def publicationEntity = company.getPublication()
         return new CompanyDTO(
                 id: company.getId(),
                 bormeId: company.getBormeId(),
@@ -246,7 +272,8 @@ class BormeProcessorService {
                 solePartner: company.getSolePartner(),
                 admin: company.getAdmin(),
                 registryData: company.getRegistryData(),
-                publicationId: company.getPublication().getId()
+                publicationFileUrl: publicationEntity.getFileUrl(),
+                publicationId: publicationEntity.getId()
         )
     }
 }

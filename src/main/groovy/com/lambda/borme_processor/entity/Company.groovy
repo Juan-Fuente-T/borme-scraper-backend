@@ -54,7 +54,7 @@ class Company {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "publication_id", nullable = false) // Clave foránea
-    BormePublication publication
+    private BormePublication publication
 
     // --- CONSTRUCTOR VACÍO (Requerido por JPA) ---
     Company() {}

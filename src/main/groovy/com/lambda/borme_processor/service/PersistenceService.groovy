@@ -141,7 +141,12 @@ class PersistenceService {
     }
 
     /**
-     * Obtener publicaciones con metadata completa.
+     * Encuentra una publicación por su ID. Devuelve una ENTIDAD.
+     * @param id El ID de la BormePublication a buscar.
+     * @return Un Optional que contiene la entidad si se encuentra.
      */
+    Optional<BormePublication> findPublicationById(Long id) {
+        return publicationRepository.findById(id)
+    }
 
 }

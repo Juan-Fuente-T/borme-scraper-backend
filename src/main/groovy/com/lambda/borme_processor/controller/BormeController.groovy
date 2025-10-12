@@ -1,6 +1,5 @@
 package com.lambda.borme_processor.controller
 
-import com.lambda.borme_processor.dto.BormePublicationDTO
 import com.lambda.borme_processor.dto.CompanyDTO
 import com.lambda.borme_processor.dto.PaginatedCompaniesDTO
 import com.lambda.borme_processor.dto.PaginatedPublicationsDTO
@@ -14,6 +13,7 @@ import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.http.HttpStatus
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.data.domain.Sort
@@ -144,6 +144,34 @@ class BormeController {
         //        } else {
         //            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response)
         //        }
+    }
+
+    /**
+     * Endpoint para listar todas las publicaciones procesadas con paginación.
+     *
+     * GET /api/borme/publications
+     *
+     * @param pageable Parámetros de paginación, incluyendo:
+     *                 - page: Número de página (por defecto 0).
+     *                 - size: Tamaño de la página (por defecto 30).
+     *                 - sort: Campo por el cual ordenar (por defecto "publicationDate").
+     *                 - direction: Dirección del orden (por defecto DESC).
+     * @return ResponseEntity que contiene un objeto `PaginatedPublicationsDTO` con:
+     *         - success: Indica si la operación fue exitosa.
+     *         - total: Número total de publicaciones.
+     *         - totalPages: Número total de páginas.
+     *         - currentPage: Página actual.
+     *         - pageSize: Tamaño de la página.
+     *         - publications: Lista de publicaciones en la página actual.
+     */
+    @GetMapping("/publications/proxy/{id}")
+    ResponseEntity<byte[]> getPublicationPdf(@PathVariable("id") Long id) {
+        Optional<byte[]> pdfBytesOptional = processorService.getPublicationPdfBytes(id)
+
+        // Si no tiene éxito se lanza excepción en el service
+        HttpHeaders headers = new HttpHeaders()
+        headers.add("Content-Type", "application/pdf")
+        return new ResponseEntity<>(pdfBytesOptional.orElse(null), headers, HttpStatus.OK)
     }
 
     /**

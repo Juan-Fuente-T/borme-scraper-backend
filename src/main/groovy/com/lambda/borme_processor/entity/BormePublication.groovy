@@ -15,19 +15,19 @@ class BormePublication {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id
+    private Long id
 
     @Column(name = "publication_date", nullable = false)
-    LocalDate publicationDate
+    private LocalDate publicationDate
 
     @Column(name = "file_name", nullable = false, unique = true)
-    String fileName
+    private String fileName
 
     @Column(name = "file_url", nullable = false, unique = true)
     private String pdfPath // <<--- referencia al PDF original
 
     @Column(name = "processed_at", nullable = false)
-    OffsetDateTime processedAt = OffsetDateTime.now()
+    private OffsetDateTime processedAt = OffsetDateTime.now()
 
     // --- CONSTRUCTOR VACÍO (Requerido por JPA) ---
     BormePublication() {}
