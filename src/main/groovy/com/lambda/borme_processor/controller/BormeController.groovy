@@ -9,6 +9,7 @@ import com.lambda.borme_processor.dto.StatsDTO
 import com.lambda.borme_processor.service.BormeProcessorService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.Page
+import org.springframework.data.web.PageableDefault
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
@@ -106,22 +107,18 @@ class BormeController {
     }
 
 
-/**
- * Búsqueda avanzada de empresas con filtros.
- * GET /api/borme/companies/search?name=SL&admin=FERNANDEZ&startDate=2025-01-01&endDate=2025-12-31&page=0&size=20&sort=publication.publicationDate,desc
- */
-
+    /**
+     * Búsqueda avanzada de empresas con filtros.
+     * GET /api/borme/companies/search?name=SL&admin=FERNANDEZ&startDate=2025-01-01&endDate=2025-12-31&page=0&size=20&sort=publication.publicationDate,desc
+     */
     @GetMapping("/companies/search")
     ResponseEntity<PaginatedCompaniesDTO> searchCompanies(
-            @RequestParam(value = "name", required = false) String name,  // ← Añadir "value"
+            @RequestParam(value = "name", required = false) String name,
             @RequestParam(value = "admin", required = false) String admin,
             @RequestParam(value = "solePartner", required = false) String solePartner,
-            @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "size", defaultValue = "20") int size,
+            @RequestParam(value = "startDate", required = false) String startDate,
+            @RequestParam(value = "endDate", required = false) String endDate,
             Pageable pageable
-            //@RequestParam(value = "sort", defaultValue = "publication.publicationDate,desc") String[] sort
     ) {
         PaginatedCompaniesDTO response = processorService.searchCompaniesWithMetadata(
                 name, admin, solePartner, startDate, endDate, pageable
@@ -130,16 +127,23 @@ class BormeController {
     }
 
 /**
- * Lista todas las publicaciones.
+ * Endpoint para listar todas las publicaciones procesadas con paginación.
  */
     @GetMapping("/publications")
     ResponseEntity<PaginatedPublicationsDTO> getPublications(
-            @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "size", defaultValue = "20") int size,
-            @RequestParam(value = "sortOrder", defaultValue = "desc") String sortOrder
+            // Anotación para establecer valores por defecto si no vienen en la URL.
+            @PageableDefault(page = 0, size = 30, sort = "publicationDate", direction = Sort.Direction.DESC)
+                    Pageable pageable
     ) {
-        PaginatedPublicationsDTO response = processorService.getPublicationsWithMetadata(page, size, sortOrder)
+        // Da la orden al servicio que finalmente llama al repository
+        PaginatedPublicationsDTO response = processorService.findAllPublications(pageable)
+
         return ResponseEntity.ok(response)
+        //if (response.success) {
+        //            return ResponseEntity.ok(response)
+        //        } else {
+        //            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response)
+        //        }
     }
 
     /**

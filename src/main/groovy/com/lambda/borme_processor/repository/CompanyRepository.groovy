@@ -52,8 +52,8 @@ interface CompanyRepository extends JpaRepository<Company, Long> {
             @Param("name") String name,
             @Param("admin") String admin,
             @Param("solePartner") String solePartner,
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate,
+            @Param("startDate") String startDate,
+            @Param("endDate") String endDate,
             Pageable pageable
     )
 }

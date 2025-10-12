@@ -133,8 +133,8 @@ class PersistenceService {
             String name,
             String admin,
             String solePartner,
-            LocalDate startDate,
-            LocalDate endDate,
+            String startDate,
+            String endDate,
             Pageable pageable
     ) {
         return companyRepository.searchCompanies(name, admin, solePartner, startDate, endDate, pageable)

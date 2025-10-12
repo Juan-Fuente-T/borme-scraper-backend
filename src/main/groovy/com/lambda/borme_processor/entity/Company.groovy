@@ -92,6 +92,10 @@ class Company {
         return capital
     }
 
+    Long getCapitalNumeric() {
+        return capitalNumeric;
+    }
+
     String getSolePartner() {
         return solePartner
     }

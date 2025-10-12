@@ -35,7 +35,8 @@ class BormeProcessorService {
      *  - Parsear el texto en entidades estructuradas (BormeParserService)
      *  - Persistir los datos obtenidos (PersistenceService)
      *
-     * Devuelve objetos DTO preparados para su exposición a través de la API.
+     * @param date La fecha que se usara para obtener datos del Borme.
+     * @return Un`ProcessingResultDTO` que contiene el resultado de procesar el Borme para esa fecha.
      */
     ProcessingResultDTO processBormeForDate(LocalDate date) {
         println "[MANDO] Iniciando operación para la fecha: $date"
@@ -93,6 +94,12 @@ class BormeProcessorService {
     /**
      * Obtiene todas las compañías y las convierte a DTOs.
      */
+    /**
+     * Retrieves all companies and converts them to DTOs.
+     *
+     * @param pageable Los parametros de paginacion
+     * @return Una lista de objetos `CompanyDTO` con datos de compañias.
+     */
     Page<CompanyDTO> findAllCompanies(Pageable pageable) {
         Page<Company> companyPage = persistenceService.findAllCompanies(pageable)
         return companyPage.map { company -> convertToDto(company) }
@@ -101,6 +108,13 @@ class BormeProcessorService {
     /**
      * Obtiene compañías por fecha y las convierte a DTOs.
      */
+    /**
+     * Retrieves companies by a specific date and converts them to DTOs.
+     *
+     * @param date La fecha que se usará para encontrar las companias
+     * @param pageable Los parametros de paginacion
+     * @return Una lista de objetos `CompanyDTO` con datos de compañias.
+     */
     Page<CompanyDTO> findCompaniesByDate(LocalDate date, Pageable pageable) {
         Page<Company> companyPage = persistenceService.findCompaniesByDate(date, pageable)
         return companyPage.map { company -> convertToDto(company) }
@@ -108,6 +122,12 @@ class BormeProcessorService {
 
     /**
      * Obtiene una compañía por ID y la convierte a DTO.
+     */
+    /**
+     * Retrieves a company by its ID and converts it to a DTO.
+     *
+     * @param id El ID de la compania a mostrar.
+     * @return Un `Optional` conteniendo un `CompanyDTO` con datos de la compañia, si se ha encontrado, o vacio.
      */
     Optional<CompanyDTO> findCompanyById(Long id) {
         Optional<Company> companyOptional = persistenceService.findCompanyById(id)
@@ -119,62 +139,20 @@ class BormeProcessorService {
      * Permite realizar consultas dinámicas por nombre, administrador, socio único
      * y por rango de fechas de publicación. Devuelve los resultados paginados.
      *
-     * @param name        Nombre (o parte del nombre) de la compañía a buscar.
-     * @param admin       Nombre del administrador asociado.
+     * @param name Nombre (o parte del nombre) de la compañía a buscar.
+     * @param admin Nombre del administrador asociado.
      * @param solePartner Nombre del socio único asociado.
-     * @param startDate   Fecha inicial del rango de publicación (inclusive).
-     * @param endDate     Fecha final del rango de publicación (inclusive).
-     * @param pageable    Parámetros de paginación (página y tamaño de resultados).
-     * @return            Página de compañías que coinciden con los filtros aplicados.
+     * @param startDate Fecha inicial del rango de publicación (inclusive).
+     * @param endDate Fecha final del rango de publicación (inclusive).
+     * @param pageable Parámetros de paginación (página y tamaño de resultados).
+     * @return Página de `CompanyDTO` con compañías que coinciden con los filtros aplicados.
      */
-    // Page<CompanyDTO> searchCompanies(
-    //            String name,
-    //            String admin,
-    //            String solePartner,
-    //            LocalDate startDate,
-    //            LocalDate endDate,
-    //            Pageable pageable
-    //    ) {
-    //        Page<Company> companyPage = persistenceService.searchCompanies(
-    //                name, admin, solePartner, startDate, endDate, pageable
-    //        )
-    //        return companyPage.map { company -> convertToDto(company)
-    //        }
-    //    }
-
-/**
- * Obtiene TODAS las empresas con metadata.
- */
-    //PaginatedCompaniesDTO getAllCompaniesWithMetadata(int page, int size) {
-    //        try {
-    //            Pageable pageable = PageRequest.of(page, size)
-    //            Page<CompanyDTO> companiesPage = this.findAllCompanies(pageable)
-    //
-    //            return new PaginatedCompaniesDTO(
-    //                    success: true,
-    //                    total: companiesPage.totalElements,
-    //                    totalPages: companiesPage.totalPages,
-    //                    currentPage: page,
-    //                    pageSize: size,
-    //                    companies: companiesPage.content
-    //            )
-    //        } catch (Exception e) {
-    //            return new PaginatedCompaniesDTO(
-    //                    success: false,
-    //                    message: "Error al consultar: ${e.message}"
-    //            )
-    //        }
-    //    }
-
-/**
- * Búsqueda de empresas con filtros y metadata.
- */
     PaginatedCompaniesDTO searchCompaniesWithMetadata(
             String name,
             String admin,
             String solePartner,
-            LocalDate startDate,
-            LocalDate endDate,
+            String startDate,
+            String endDate,
             Pageable pageable
     ) {
         try {
@@ -201,27 +179,30 @@ class BormeProcessorService {
     }
 
 /**
- * Obtiene publicaciones con metadata.
+ * Obtiene y empaqueta una respuesta paginada de todas las publicaciones.
+ * @param pageable Los parámetros de paginación.
+ * @return Un DTO que contiene la respuesta paginada completa.
  */
-    PaginatedPublicationsDTO getPublicationsWithMetadata(int page, int size, String sortOrder) {
-        try {
-            String[] sort = ["publicationDate," + sortOrder]
-            Page<BormePublicationDTO> publicationsPage = this.findAllPublicationsWithMetadata(pageable)
+    PaginatedPublicationsDTO findAllPublications(Pageable pageable) {
+        Page<BormePublication> publicationPage = persistenceService.findAllPublications(pageable)
 
-            return new PaginatedPublicationsDTO(
-                    success: true,
-                    total: publicationsPage.totalElements,
-                    totalPages: publicationsPage.totalPages,
-                    currentPage: page,
-                    pageSize: size,
-                    publications: publicationsPage.content
-            )
-        } catch (Exception e) {
-            return new PaginatedPublicationsDTO(
-                    success: false,
-                    message: "Error: ${e.message}"
+        def publicationDTOs = publicationPage.content.collect { publication ->
+            new BormePublicationDTO(
+                    id: publication.getId(),
+                    publicationDate: publication.getPublicationDate(),
+                    fileName: publication.getFileName(),
+                    fileUrl: publication.getFileUrl()
             )
         }
+
+        return new PaginatedPublicationsDTO(
+                success: true,
+                total: publicationPage.totalElements,
+                totalPages: publicationPage.totalPages,
+                currentPage: pageable.getPageNumber(),
+                pageSize: pageable.getPageSize(),
+                publications: publicationDTOs
+        )
     }
 
     /**
@@ -249,6 +230,8 @@ class BormeProcessorService {
     // --- UNIDAD INTERNA ---
     /**
      * Método privado y reutilizable para convertir una Entidad Company a un CompanyDTO.
+     * @param company La `Company` entity a convertir.
+     * @return El correspondiente`CompanyDTO`.
      */
     private static CompanyDTO convertToDto(Company company) {
         return new CompanyDTO(
