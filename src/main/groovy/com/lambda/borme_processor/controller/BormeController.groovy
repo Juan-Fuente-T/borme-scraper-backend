@@ -101,8 +101,8 @@ class BormeController {
      */
     @GetMapping("/companies/{id}")
     ResponseEntity<?> getCompanyById(@PathVariable("id") Long id) {
-        Optional<CompanyDTO> companyDtoOptional = processorService.findCompanyById(id)
-        return ResponseEntity.ok(companyDtoOptional.get())
+        CompanyDTO companyDto = processorService.findCompanyById(id)
+        return ResponseEntity.ok(companyDto)
     }
 
     /**

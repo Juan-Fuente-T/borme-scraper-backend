@@ -173,9 +173,9 @@ class BormeProcessorService {
      * Retrieves a company by its ID and converts it to a DTO.
      *
      * @param id El ID de la compania a mostrar.
-     * @return Un `Optional` conteniendo un `CompanyDTO` con datos de la compañia, si se ha encontrado, o vacio.
+     * @return Un `CompanyDTO` con datos de la compañia, si se ha encontrado, o vacio.
      */
-    Optional<CompanyDTO> findCompanyById(Long id) {
+    CompanyDTO findCompanyById(Long id) {
         // Si no la encuentra, lanza una excepción.
         Company company = persistenceService.findCompanyById(id)
                 .orElseThrow({ new ResourceNotFoundException("No se encontró la empresa con ID: ${id}") })
@@ -260,16 +260,16 @@ class BormeProcessorService {
      * Este método actúa como un proxy, descargando el contenido desde la URL pública almacenada.
      *
      * @param id El ID de la BormePublication a procesar.
-     * @return Un Optional que contiene el array de bytes del PDF si la operación tiene éxito.
+     * @return Un array de bytes del PDF si la operación tiene éxito.
      * @throws ResourceNotFoundException si la publicación con el ID especificado no se encuentra en la base de datos.
      * @throws IOException, MalformedURLException, etc. si ocurre un error durante la descarga del fichero desde la URL externa. Estas excepciones genéricas serán capturadas por el GlobalExceptionHandler.
      */
     byte[] getPublicationPdfBytes(Long id) {
-        BormePublication publicationOptional = persistenceService.findPublicationById(id)
+        BormePublication publication = persistenceService.findPublicationById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la publicación con ID: " + id))
 
         // Si la publicación existe, se intenta descargar el contenido desde su URL.
-        byte[] pdfBytes = new URL(publicationOptional.get().getFileUrl()).bytes
+        byte[] pdfBytes = new URL(publication.getFileUrl()).bytes
 
         // Si falla lanza una excepción que el GlobalExceptionHandler convertirá en HTTP 500.
         if (pdfBytes == null || pdfBytes.length == 0) {
@@ -286,7 +286,7 @@ class BormeProcessorService {
         // Recopilar datos brutos.
         def totalCompanies = persistenceService.countTotalCompanies()
         def totalPublications = persistenceService.countTotalPublications()
-        Optional<LocalDate> latestDateOptional = persistenceService.findLatestPublicationDate()
+        LocalDate latestDateOptional = persistenceService.findLatestPublicationDate()
 
         // Procesa y formatea los datos.
         def latestDateString = latestDateOptional.map({ it.toString() }).orElse(null)
