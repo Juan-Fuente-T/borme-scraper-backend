@@ -1,14 +1,12 @@
 package com.lambda.borme_processor.entity
 
-import com.fasterxml.jackson.annotation.JsonIgnore
-import groovy.transform.Canonical
 import jakarta.persistence.*
-import lombok.Data
 
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Entity
-@Table(name = "company")
+@Table(name = "companies")
 //@Data
 //@Canonical // <-- Reemplaza a @Data. Es idiomático en Groovy.
 class Company {
@@ -26,7 +24,7 @@ class Company {
     private String actType
 
     @Column(name = "start_date")
-    private String startDate
+    private LocalDate startDate
 
     @Column(name = "object")
     private String object

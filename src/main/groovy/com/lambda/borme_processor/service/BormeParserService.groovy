@@ -2,10 +2,8 @@ package com.lambda.borme_processor.service
 
 import com.lambda.borme_processor.entity.Company
 import org.springframework.stereotype.Service
-
 import java.time.LocalDateTime
-import java.util.regex.Pattern
-
+import static com.lambda.borme_processor.utils.DateUtils.parseDate // Importa el método estático
 @Service
 class BormeParserService {
 
@@ -52,7 +50,7 @@ class BormeParserService {
             // === Comienzo de operaciones ===
             def mStart = (block =~ /Comienzo de operaciones:\s*([\d.]+)/)
             if (mStart.find()) {
-                company.startDate = clean(mStart.group(1))
+                company.startDate = parseDate(clean(mStart.group(1)))
             }
 
             // === Objeto social ===

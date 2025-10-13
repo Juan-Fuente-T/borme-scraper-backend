@@ -1,11 +1,9 @@
 package com.lambda.borme_processor.entity
 
-import groovy.transform.Canonical
 import jakarta.persistence.*
-import lombok.Data
 
 import java.time.LocalDate
-import java.time.OffsetDateTime
+import java.time.LocalDateTime
 
 @Entity
 @Table(name = "borme_publications")
@@ -27,7 +25,7 @@ class BormePublication {
     private String pdfPath // <<--- referencia al PDF original
 
     @Column(name = "processed_at", nullable = false)
-    private OffsetDateTime processedAt = OffsetDateTime.now()
+    private LocalDateTime processedAt = LocalDateTime.now()
 
     // --- CONSTRUCTOR VACÍO (Requerido por JPA) ---
     BormePublication() {}
@@ -41,5 +39,5 @@ class BormePublication {
 
     String getFileUrl() { return pdfPath }
 
-    OffsetDateTime getProcessedAt() { return processedAt }
+    LocalDateTime getProcessedAt() { return processedAt }
 }
