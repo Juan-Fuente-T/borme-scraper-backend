@@ -7,10 +7,8 @@ import com.lambda.borme_processor.dto.ProcessingResultDTO
 import com.lambda.borme_processor.dto.StatsDTO
 import com.lambda.borme_processor.service.BormeProcessorService
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.domain.Page
 import org.springframework.data.web.PageableDefault
 import org.springframework.format.annotation.DateTimeFormat
-import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpHeaders;
@@ -33,43 +31,23 @@ class BormeController {
     private BormeProcessorService processorService
 
     /**
-     * Procesa el BORME de una fecha específica.
+     * Endpoint para procesar el BORME de una fecha específica.
+     *
      * POST /api/borme/process?date=2025-09-01
+     *
+     * @param date La fecha del BORME que se desea procesar (formato: yyyy-MM-dd).
+     * @return Un `ResponseEntity` que contiene un `ProcessingResultDTO` con
+     *                        la lista de empresas resultado del procesamiento.
      */
+
     @PostMapping("/process")
     ResponseEntity<ProcessingResultDTO> processBorme(
-            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(value = "force", required = false, defaultValue = "false") boolean force
     ) {
-            ProcessingResultDTO result = processorService.processBormeForDate(date)
-            return ResponseEntity.ok(result)
+        ProcessingResultDTO result = processorService.processBormeForDate(date, force)
+        return ResponseEntity.ok(result)
     }
-
-
-    /**
-     * Obtiene empresas de una fecha específica (paginado).
-
-     */
-    //@GetMapping("/companies")
-    //    ResponseEntity<PaginatedCompaniesDTO> getCompaniesByDate(
-    //            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-    //            @RequestParam(value = "page", defaultValue = "0") int page,
-    //            @RequestParam(value = "size", defaultValue = "20") int size
-    //    ) {
-    //        try {
-    //            Pageable pageable = PageRequest.of(page, size)
-    //            Page<CompanyDTO> companiesPage = processorService.findCompaniesByDate(date, pageable)
-    //
-    //            def response = new PaginatedCompaniesDTO(
-    //                    success: true, total: companiesPage.totalElements, totalPages: companiesPage.totalPages,
-    //                    currentPage: page, pageSize: size, companies: companiesPage.content
-    //            )
-    //            return ResponseEntity.ok(response)
-    //
-    //        } catch (Exception e) {
-    //            def errorResponse = new PaginatedCompaniesDTO(success: false, message: "Error al consultar: ${e.message}")
-    //            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse)
-    //        }
-    //    }
 
     /**
      * Obtiene y empaqueta una respuesta paginada de compañías para una fecha específica.
@@ -87,9 +65,17 @@ class BormeController {
         PaginatedCompaniesDTO response = processorService.findCompaniesByDate(date, pageable)
         return ResponseEntity.ok(response)
     }
+
     /**
-     * Obtiene TODAS las empresas (paginado).
+     * Endpoint para obtener todas las empresas con paginación.
+     *
      * GET /api/borme/companies/all?page=0&size=20
+     *
+     * @param pageable Parámetros de paginación, incluyendo:
+     *                 - page: Número de página (por defecto 0).
+     *                 - size: Tamaño de la página (por defecto 20).
+     *                 - sort: Campo y dirección de ordenación (por defecto `startDate,desc`).
+     * @return Un `ResponseEntity` que contiene un `PaginatedCompaniesDTO` con las empresas paginadas.
      */
     //@GetMapping("/companies/all")
     //    ResponseEntity<PaginatedCompaniesDTO> getAllCompanies(
@@ -105,24 +91,36 @@ class BormeController {
     }
 
     /**
-     * Obtiene el detalle de UNA empresa por ID.
+     * Endpoint para obtener el detalle de una empresa por su ID.
+     *
      * GET /api/borme/companies/123
+     *
+     * @param id El ID de la empresa que se desea obtener.
+     * @return Un `ResponseEntity` que contiene un `CompanyDTO` con los detalles de la empresa.
+     *         Si no se encuentra la empresa, se lanza una excepción.
      */
     @GetMapping("/companies/{id}")
     ResponseEntity<?> getCompanyById(@PathVariable("id") Long id) {
         Optional<CompanyDTO> companyDtoOptional = processorService.findCompanyById(id)
         return ResponseEntity.ok(companyDtoOptional.get())
-        //if (companyDtoOptional.isPresent()) {
-        //            return ResponseEntity.ok(companyDtoOptional.get())
-        //        } else {
-        //            return ResponseEntity.status(HttpStatus.NOT_FOUND).body([success: false, message: "Empresa no encontrada"])
-        //        }
     }
 
-
     /**
-     * Búsqueda avanzada de empresas con filtros.
+     * Endpoint para realizar una búsqueda avanzada de empresas con filtros.
+     *
+     * GET /api/borme/companies/search
      * GET /api/borme/companies/search?name=SL&admin=FERNANDEZ&startDate=2025-01-01&endDate=2025-12-31&page=0&size=20&sort=publication.publicationDate,desc
+     *
+     * @param name Opcional. El nombre de la empresa a buscar.
+     * @param admin Opcional. El nombre del administrador para filtrar.
+     * @param solePartner Opcional. Indica si la empresa tiene un socio único.
+     * @param startDate Opcional. La fecha de inicio para filtrar empresas (formato: yyyy-MM-dd).
+     * @param endDate Opcional. La fecha de fin para filtrar empresas (formato: yyyy-MM-dd).
+     * @param pageable Parámetros de paginación, incluyendo:
+     *                 - page: Número de página (por defecto 0).
+     *                 - size: Tamaño de la página (por defecto 20).
+     *                 - sort: Campo y dirección de ordenación (por ejemplo, `startDate,desc`).
+     * @return Un `ResponseEntity` que contiene un `PaginatedCompaniesDTO` con los resultados paginados de la búsqueda.
      */
     @GetMapping("/companies/search")
     ResponseEntity<PaginatedCompaniesDTO> searchCompanies(
@@ -167,11 +165,6 @@ class BormeController {
         PaginatedPublicationsDTO response = processorService.findAllPublications(pageable)
 
         return ResponseEntity.ok(response)
-        //if (response.success) {
-        //            return ResponseEntity.ok(response)
-        //        } else {
-        //            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response)
-        //        }
     }
 
     /**
@@ -184,12 +177,12 @@ class BormeController {
      */
     @GetMapping("/publications/proxy/{id}")
     ResponseEntity<byte[]> getPublicationPdf(@PathVariable("id") Long id) {
-        Optional<byte[]> pdfBytesOptional = processorService.getPublicationPdfBytes(id)
+        byte[] pdfBytes = processorService.getPublicationPdfBytes(id)
 
-        // Si no tiene éxito se lanza excepción en el service
+        // Si no tiene éxito se lanza excepción en el servicio
         HttpHeaders headers = new HttpHeaders()
         headers.add("Content-Type", "application/pdf")
-        return new ResponseEntity<>(pdfBytesOptional.orElse(null), headers, HttpStatus.OK)
+        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK)
     }
 
     /**
@@ -201,16 +194,8 @@ class BormeController {
      */
     @GetMapping("/stats")
     ResponseEntity<StatsDTO> getStats() {
-        try {
-            StatsDTO stats = processorService.getStats()
-            return ResponseEntity.ok(stats)
-        } catch (Exception e) {
-            def errorResponse = new StatsDTO(
-                    success: false,
-                    message: "Error al obtener estadísticas: ${e.message}"
-            )
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse)
-        }
+        StatsDTO stats = processorService.getStats()
+        return ResponseEntity.ok(stats)
     }
 
     /**

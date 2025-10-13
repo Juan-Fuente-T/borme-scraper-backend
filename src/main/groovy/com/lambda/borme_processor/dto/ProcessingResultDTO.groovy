@@ -9,4 +9,5 @@ class ProcessingResultDTO {
     int filesProcessed
     int companiesFound
     List<String> fileUrls = [] // <-- Incluye lista de URLs
+    boolean fromCache
 }

@@ -4,9 +4,11 @@ import com.lambda.borme_processor.entity.Company
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
+import org.springframework.transaction.annotation.Transactional
 
 import java.time.LocalDate
 
@@ -25,19 +27,10 @@ interface CompanyRepository extends JpaRepository<Company, Long> {
             Pageable pageable
     )
 
-    // Búsqueda combinada: texto + rango de fechas
-    //@Query("""
-    //        SELECT c FROM Company c
-    //        WHERE (:name IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :name, '%')))
-    //        AND (:startDate IS NULL OR c.publication.publicationDate >= :startDate)
-    //        AND (:endDate IS NULL OR c.publication.publicationDate <= :endDate)
-    //    """)
-    //    Page<Company> searchCompanies(
-    //            @Param("name") String name,
-    //            @Param("startDate") LocalDate startDate,
-    //            @Param("endDate") LocalDate endDate,
-    //            Pageable pageable
-    //    )
+    // Borrado de publicaciones por fecha
+    @Modifying
+    @Transactional
+    long deleteByPublication_PublicationDate(LocalDate publicationDate)
 
     // Búsqueda avanzada (nombre, admin o inversor) con + rango de fechas
     @Query(""" 
@@ -57,6 +50,3 @@ interface CompanyRepository extends JpaRepository<Company, Long> {
             Pageable pageable
     )
 }
-
-//AND (:startDate IS NULL OR c.publication.publicationDate >= :startDate)
-//        AND (:endDate IS NULL OR c.publication.publicationDate <= :endDate)

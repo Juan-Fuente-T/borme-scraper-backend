@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+
 import java.time.LocalDate
 import java.net.URL
 
@@ -40,58 +42,87 @@ class BormeProcessorService {
      * @param date La fecha que se usara para obtener datos del Borme.
      * @return Un`ProcessingResultDTO` que contiene el resultado de procesar el Borme para esa fecha.
      */
-    ProcessingResultDTO processBormeForDate(LocalDate date) {
+    @Transactional
+    ProcessingResultDTO processBormeForDate(LocalDate date, boolean force) {
         println "Iniciando operación para la fecha: $date"
 
-        // Scraper, adquiere los activos.
-        def downloadedFiles = scraperService.scrapeAndDownloadPdfs(date)
+        File downloadDir = new File("temp_borme_${date}") // Define la coordenada del directorio al inicio
 
-        // Si no hay activos, abortar y reportar.
-        if (downloadedFiles.isEmpty()) {
+        try {
+            // --- PASO 1: CHEQUEO ESTRATÉGICO Y PURGADO CONDICIONAL ---
+            boolean dataExisted = persistenceService.doesDataExistForDate(date)
+
+            if (dataExisted && !force) {
+                println "[PROCESSOR] Datos para ${date} ya existen. Misión cancelada para evitar redundancia."
+                return new ProcessingResultDTO(
+                        success: true,
+                        message: "Los datos para esta fecha ya habían sido procesados.",
+                        date: date,
+                        fromCache: true // Flag útil para el frontend
+                )
+            }
+
+            if (dataExisted && force) {
+                println "[PROCESSOR] Orden de FORZAR recibida. Purgando datos existentes para ${date}."
+                persistenceService.deletePublicationsAndAssociatedDataByDate(date)
+            }
+
+            // --- PASO 2: ADQUISICIÓN DE ACTIVOS ---
+            def downloadedFiles = scraperService.scrapeAndDownloadPdfs(date)
+
+            if (downloadedFiles.isEmpty()) {
+                println "[PROCESSOR] No se encontraron publicaciones para la fecha ${date} (posiblemente festivo)."
+                return new ProcessingResultDTO(
+                        success: true,
+                        message: "No se encontraron publicaciones BORME para la fecha: $date",
+                        date: date
+                )
+            }
+
+            int totalCompaniesFound = 0
+            List<String> collectedUrls = []
+
+            // Procesar cada activo.
+            downloadedFiles.each { scrapedFile ->
+                // Parser de PDF, extrae la inteligencia en bruto.
+                String text = pdfParsingService.extractTextFromFile(scrapedFile.localFile)
+
+                // Parser de Texto, estructura la inteligencia.
+                def companies = bormeParserService.extractCompaniesFromText(text, scrapedFile.localFile.name)
+
+                // Guarda la URL pública.
+                collectedUrls.add(scrapedFile.publicUrl)
+
+                // Guarda en base de datos.
+                persistenceService.saveBormeData(
+                        scrapedFile.localFile.name,
+                        date,
+                        scrapedFile.publicUrl,
+                        companies
+                )
+                totalCompaniesFound += companies.size()
+            }
+
+            println "[PROCESSOR] Operación completada para la fecha: $date"
+
+            // Construye el DTO de resultado con toda la inteligencia recopilada.
             return new ProcessingResultDTO(
-                    success: false,
-                    message: "No se encontraron publicaciones BORME para la fecha: $date",
+                    success: true,
+                    message: "Procesamiento completado con éxito",
                     date: date,
-                    filesProcessed: 0,
-                    companiesFound: 0
+                    filesProcessed: downloadedFiles.size(),
+                    companiesFound: totalCompaniesFound,
+                    fileUrls: collectedUrls
             )
+        } finally {
+            // --- PASO 4: PROTOCOLO DE LIMPIEZA ---
+            if (downloadDir.exists()) {
+                println "[PROCESSOR] Eliminando directorio de trabajo temporal: ${downloadDir.path}"
+                if (!downloadDir.deleteDir()) { // deleteDir() es de Groovy para borrado recursivo
+                    System.err.println("[PROCESSOR] No se pudo eliminar el directorio temporal: ${downloadDir.path}")
+                }
+            }
         }
-
-        int totalCompaniesFound = 0
-        List<String> collectedUrls = []
-
-        // Procesar cada activo.
-        downloadedFiles.each { scrapedFile ->
-            // Parser de PDF, extrae la inteligencia en bruto.
-            String text = pdfParsingService.extractTextFromFile(scrapedFile.localFile)
-
-            // Parser de Texto, estructura la inteligencia.
-            def companies = bormeParserService.extractCompaniesFromText(text, scrapedFile.localFile.name)
-
-            // Guarda la URL pública.
-            collectedUrls.add(scrapedFile.publicUrl)
-
-            // Guarda en base de datos.
-            persistenceService.saveBormeData(
-                    scrapedFile.localFile.name,
-                    date,
-                    scrapedFile.publicUrl,
-                    companies
-            )
-            totalCompaniesFound += companies.size()
-        }
-
-        println "Operación completada para la fecha: $date"
-
-        // Construye el DTO de resultado con toda la inteligencia recopilada.
-        return new ProcessingResultDTO(
-                success: true,
-                message: "Procesamiento completado con éxito",
-                date: date,
-                filesProcessed: downloadedFiles.size(),
-                companiesFound: totalCompaniesFound,
-                fileUrls: collectedUrls
-        )
     }
     /**
      * Obtiene y empaqueta una respuesta paginada de todas las compañías.
@@ -99,13 +130,10 @@ class BormeProcessorService {
      * @param pageable Los parametros de paginacion
      * @return Una CTO que contiene la respuesta paginada completa.
      */
-    //Page<CompanyDTO> findAllCompanies(Pageable pageable) {
     PaginatedCompaniesDTO findAllCompanies(Pageable pageable) {
         Page<Company> companyPage = persistenceService.findAllCompanies(pageable)
-        //return companyPage.map { company -> convertToDto(company) }
         def companyDTOs = companyPage.content.collect { company -> convertToDto(company) }
 
-        // 3. Construye el informe de misión final y completo.
         return new PaginatedCompaniesDTO(
                 success: true,
                 total: companyPage.totalElements,

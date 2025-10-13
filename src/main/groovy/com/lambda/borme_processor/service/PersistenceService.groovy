@@ -149,4 +149,35 @@ class PersistenceService {
         return publicationRepository.findById(id)
     }
 
+    /**
+     * Verifica si existen datos para una fecha específica.
+     *
+     * @param date La fecha para la cual se desea verificar la existencia de datos.
+     * @return `true` si existen datos para la fecha especificada, `false` en caso contrario.
+     */
+    boolean doesDataExistForDate(LocalDate date) {
+        println "[PERSISTENCIA] Verificando existencia de datos para la fecha: ${date}"
+        return publicationRepository.existsByPublicationDate(date)
+    }
+
+    /**
+     * Borra publicaciones y todas las asociados para una fecha en especídico.
+     *
+     * @param date The date for which the publications and associated data should be deleted.
+     */
+    void deletePublicationsAndAssociatedDataByDate(LocalDate date) {
+        println "[PERSISTENCIA] Iniciando purga en dos fases para la fecha: ${date}"
+
+        // Eliminar las compañías relacionadas.
+        println "[PERSISTENCIA] Fase 1: Ordenando eliminación de compañías..."
+        long deletedCompanies = companyRepository.deleteByPublication_PublicationDate(date)
+        println "[PERSISTENCIA] -> ${deletedCompanies} compañías eliminadas."
+
+        //  Eliminar las publicaciones.
+        println "[PERSISTENCIA] Fase 2: Ordenando eliminación de publicaciones..."
+        long deletedPublications = publicationRepository.deleteByPublicationDate(date)
+        println "[PERSISTENCIA] -> ${deletedPublications} publicaciones eliminadas."
+
+        println "[PERSISTENCIA] Purga completada con éxito."
+    }
 }
