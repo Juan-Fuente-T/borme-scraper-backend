@@ -5,14 +5,16 @@ import com.lambda.borme_processor.dto.ScrapedFileInfoDTO
 import org.jsoup.HttpStatusException
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import javax.net.ssl.SSLContext
-import javax.net.ssl.TrustManagerFactory
-import java.security.KeyStore
 import java.time.LocalDate
+import java.nio.file.Files
 
 @Service
 class BormeScraperService {
+    @Autowired
+    private DownloaderService downloaderService
 
     private final String BORME_URL_TEMPLATE = "https://www.boe.es/borme/dias/%d/%02d/%02d/"
 
@@ -25,7 +27,7 @@ class BormeScraperService {
     List<ScrapedFileInfoDTO> scrapeAndDownloadPdfs(LocalDate targetDate) {
         println "[UNIDAD DE ADQUISICIÓN] Iniciando operación para la fecha: ${targetDate}..."
         // Se gestiona un directorio temporal, específico para la fecha.
-        def downloadDir = new File("temp_borme_${targetDate}")
+        File downloadDir = new File("temp_borme_${targetDate}")
         if (!downloadDir.exists()) {
             downloadDir.mkdirs()
         }
@@ -36,12 +38,12 @@ class BormeScraperService {
         String bormeUrl = String.format(BORME_URL_TEMPLATE, targetDate.getYear(), targetDate.getMonthValue(), targetDate.getDayOfMonth())
 
         try {
-            SSLContext sslContext = createSslContext()
+            SSLContext sslContext = downloaderService.getSslContext()
 
             println "[UNIDAD DE ADQUISICIÓN] Extrayendo lista de objetivos de ${bormeUrl}..."
             Document doc = Jsoup.connect(bormeUrl).sslSocketFactory(sslContext.getSocketFactory()).get()
             //def pdfLinks = doc.select('a[href$=.pdf]')
-            def pdfLinks = doc.select('a[href*="BORME-A-"]:not([href$="-99.pdf"])')
+            var pdfLinks = doc.select('a[href*="BORME-A-"]:not([href$="-99.pdf"])')
             println "[UNIDAD DE ADQUISICIÓN] Se han identificado ${pdfLinks.size()} objetivos."
 
             if (pdfLinks.isEmpty()) {
@@ -53,16 +55,18 @@ class BormeScraperService {
             pdfLinks.eachWithIndex { link, i ->
                 String pdfUrl = link.absUrl("href")
                 String fileName = pdfUrl.substring(pdfUrl.lastIndexOf('/') + 1)
-                def targetFile = new File(downloadDir, fileName)
+                File targetFile = new File(downloadDir, fileName)
                 println " -> Adquiriendo [${i + 1}/${pdfLinks.size()}] ${fileName}"
 
-                byte[] pdfBytes = Jsoup.connect(pdfUrl)
-                        .sslSocketFactory(sslContext.getSocketFactory())
-                        .ignoreContentType(true).execute().bodyAsBytes()
-                targetFile.bytes = pdfBytes
+                byte[] pdfBytes = downloaderService.downloadFromUrl(pdfUrl)
+                try {
+                    Files.write(targetFile.toPath(), pdfBytes);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
 
                 // Se añaden a la lista.
-                def intelPackage = new ScrapedFileInfoDTO(localFile: targetFile, publicUrl: pdfUrl)
+                var intelPackage = new ScrapedFileInfoDTO(localFile: targetFile, publicUrl: pdfUrl)
                 scrapedIntelligence.add(intelPackage)
             }
             println "[UNIDAD DE ADQUISICIÓN] Todos los activos han sido asegurados."
@@ -83,27 +87,6 @@ class BormeScraperService {
         }
 
         return scrapedIntelligence
-    }
-
-    /**
-     * Crea y configura un contexto SSL personalizado para Jsoup.
-     */
-    private SSLContext createSslContext() {
-        try {
-            def trustStoreFile = getClass().getResourceAsStream("/truststore.p12")
-            if (trustStoreFile == null) {
-                throw new RuntimeException("No se pudo encontrar 'truststore.p12'.")
-            }
-            KeyStore trustStore = KeyStore.getInstance("PKCS12")
-            trustStore.load(trustStoreFile, "changeit".toCharArray())
-            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
-            tmf.init(trustStore)
-            SSLContext sslContext = SSLContext.getInstance("TLS")
-            sslContext.init(null, tmf.getTrustManagers(), null)
-            return sslContext
-        } catch (Exception e) {
-            throw new RuntimeException("Fallo crítico durante la configuración del contexto SSL.", e)
-        }
     }
 }
 

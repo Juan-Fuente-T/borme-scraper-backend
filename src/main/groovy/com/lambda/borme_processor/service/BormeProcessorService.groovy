@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 import java.time.LocalDate
-import java.net.URL
 
 @Service
 class BormeProcessorService {
@@ -29,6 +28,8 @@ class BormeProcessorService {
     private BormeParserService bormeParserService
     @Autowired
     private PersistenceService persistenceService
+    @Autowired
+    private DownloaderService downloaderService;
 
     /**
      * Servicio principal que orquesta el flujo completo del procesamiento del BORME.
@@ -278,8 +279,12 @@ class BormeProcessorService {
         BormePublication publication = persistenceService.findPublicationById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la publicación con ID: " + id))
 
+        if (publication.getFileUrl() == null || publication.getFileUrl().isBlank()) {
+            throw new ResourceNotFoundException("La publicación ID: " + id + " existe pero no tiene una URL de PDF asociada.");
+        }
+
         // Si la publicación existe, se intenta descargar el contenido desde su URL.
-        byte[] pdfBytes = new URL(publication.getFileUrl()).bytes
+        byte[] pdfBytes = downloaderService.downloadFromUrl(publication.getFileUrl())
 
         // Si falla lanza una excepción que el GlobalExceptionHandler convertirá en HTTP 500.
         if (pdfBytes == null || pdfBytes.length == 0) {
