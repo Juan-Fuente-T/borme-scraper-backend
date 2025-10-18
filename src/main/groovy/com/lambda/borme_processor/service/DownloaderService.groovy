@@ -1,11 +1,11 @@
-package com.lambda.borme_processor.service;
+package com.lambda.borme_processor.service
 
-import org.jsoup.Jsoup;
-import org.springframework.stereotype.Service;
+import org.jsoup.Jsoup
+import org.springframework.stereotype.Service
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManagerFactory;
-import java.security.KeyStore;
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManagerFactory
+import java.security.KeyStore
 
 /**
  * Servicio especializado para descargar activos desde fuentes externas
@@ -14,14 +14,14 @@ import java.security.KeyStore;
 @Service
 public class DownloaderService {
 
-    private final SSLContext sslContext;
+    private final SSLContext sslContext
 
     /**
      * El constructor inicializa el contexto SSL una sola vez al crear el servicio,
      * haciéndolo reutilizable y eficiente.
      */
     public DownloaderService() {
-        this.sslContext = createSslContext();
+        this.sslContext = createSslContext()
     }
 
     /**
@@ -30,7 +30,7 @@ public class DownloaderService {
      * @return La instancia única del SSLContext.
      */
     public SSLContext getSslContext() {
-        return this.sslContext;
+        return this.sslContext
     }
     /**
      * Descarga el contenido de una URL como un array de bytes.
@@ -41,18 +41,18 @@ public class DownloaderService {
      */
     public byte[] downloadFromUrl(String url) {
         try {
-            System.out.println("[UNIDAD DE DESCARGA] Asegurando activo desde: " + url);
+            System.out.println("[UNIDAD DE DESCARGA] Asegurando activo desde: " + url)
             return Jsoup.connect(url)
                     .sslSocketFactory(this.sslContext.getSocketFactory())
                     .ignoreContentType(true)
                     .maxBodySize(0) // Permite descargar ficheros de cualquier tamaño
                     .execute()
-                    .bodyAsBytes();
+                    .bodyAsBytes()
         } catch (Exception e) {
-            System.err.println("!! FALLO CRÍTICO en la Unidad de Descarga para la URL: " + url);
-            e.printStackTrace();
+            System.err.println("!! FALLO CRÍTICO en la Unidad de Descarga para la URL: " + url)
+            e.printStackTrace()
             // Envolvemos la excepción para que sea manejada por el GlobalExceptionHandler
-            throw new RuntimeException("Fallo irrecuperable durante la descarga desde " + url, e);
+            throw new RuntimeException("Fallo irrecuperable durante la descarga desde " + url, e)
         }
     }
 
@@ -62,19 +62,19 @@ public class DownloaderService {
      */
     private SSLContext createSslContext() {
         try {
-            var trustStoreFile = getClass().getResourceAsStream("/truststore.p12");
+            var trustStoreFile = getClass().getResourceAsStream("/truststore.p12")
             if (trustStoreFile == null) {
-                throw new RuntimeException("No se pudo encontrar 'truststore.p12' en los recursos.");
+                throw new RuntimeException("No se pudo encontrar 'truststore.p12' en los recursos.")
             }
-            KeyStore trustStore = KeyStore.getInstance("PKCS12");
-            trustStore.load(trustStoreFile, "changeit".toCharArray());
-            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-            tmf.init(trustStore);
-            SSLContext sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, tmf.getTrustManagers(), null);
-            return sslContext;
+            KeyStore trustStore = KeyStore.getInstance("PKCS12")
+            trustStore.load(trustStoreFile, "changeit".toCharArray())
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+            tmf.init(trustStore)
+            SSLContext sslContext = SSLContext.getInstance("TLS")
+            sslContext.init(null, tmf.getTrustManagers(), null)
+            return sslContext
         } catch (Exception e) {
-            throw new RuntimeException("Fallo crítico durante la configuración del contexto SSL.", e);
+            throw new RuntimeException("Fallo crítico durante la configuración del contexto SSL.", e)
         }
     }
 }

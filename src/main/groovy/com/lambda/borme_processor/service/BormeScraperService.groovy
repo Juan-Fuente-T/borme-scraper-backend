@@ -60,9 +60,9 @@ class BormeScraperService {
 
                 byte[] pdfBytes = downloaderService.downloadFromUrl(pdfUrl)
                 try {
-                    Files.write(targetFile.toPath(), pdfBytes);
+                    Files.write(targetFile.toPath(), pdfBytes)
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    throw new RuntimeException(e)
                 }
 
                 // Se añaden a la lista.

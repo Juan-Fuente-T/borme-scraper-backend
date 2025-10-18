@@ -29,7 +29,7 @@ class BormeProcessorService {
     @Autowired
     private PersistenceService persistenceService
     @Autowired
-    private DownloaderService downloaderService;
+    private DownloaderService downloaderService
 
     /**
      * Servicio principal que orquesta el flujo completo del procesamiento del BORME.
@@ -280,7 +280,7 @@ class BormeProcessorService {
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la publicación con ID: " + id))
 
         if (publication.getFileUrl() == null || publication.getFileUrl().isBlank()) {
-            throw new ResourceNotFoundException("La publicación ID: " + id + " existe pero no tiene una URL de PDF asociada.");
+            throw new ResourceNotFoundException("La publicación ID: " + id + " existe pero no tiene una URL de PDF asociada.")
         }
 
         // Si la publicación existe, se intenta descargar el contenido desde su URL.
@@ -302,7 +302,7 @@ class BormeProcessorService {
         // Recopilar datos brutos.
         def totalCompanies = persistenceService.countTotalCompanies()
         def totalPublications = persistenceService.countTotalPublications()
-        LocalDate latestDateOptional = persistenceService.findLatestPublicationDate()
+        Optional<LocalDate> latestDateOptional = persistenceService.findLatestPublicationDate()
 
         // Procesa y formatea los datos.
         def latestDateString = latestDateOptional.map({ it.toString() }).orElse(null)
