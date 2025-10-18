@@ -62,7 +62,8 @@ class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration()
-        configuration.setAllowedOrigins(["http://localhost:5173"])  // Frontend Svelte
+        //configuration.setAllowedOrigins(["http://localhost:5173"])  // Frontend Svelte
+        configuration.setAllowedOrigins(["*"])  // Temporalmente permisivo
         configuration.setAllowedMethods(["GET", "POST", "PUT", "DELETE", "OPTIONS"])
         configuration.setAllowedHeaders(["*"])
         configuration.setAllowCredentials(true)
