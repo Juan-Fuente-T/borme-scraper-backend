@@ -206,8 +206,18 @@ class BormeProcessorService {
             Pageable pageable
     ) {
         try {
+            String nameParam = name ? "%" + name.toLowerCase() + "%" : null
+            String adminParam = admin ? "%" + admin.toLowerCase() + "%" : null
+            String solePartnerParam = solePartner ? "%" + solePartner.toLowerCase() + "%" : null
+
+            // Hace que la llamada al repositorio sea CON los parámetros ya procesados
             Page<Company> companyPage = persistenceService.searchCompaniesWithMetadata(
-                    name, admin, solePartner, startDate, endDate, pageable
+                    nameParam,
+                    adminParam,
+                    solePartnerParam,
+                    startDate,
+                    endDate,
+                    pageable
             )
 
             def companyDTOs = companyPage.content.collect { company -> convertToDto(company) }
@@ -277,6 +287,7 @@ class BormeProcessorService {
         }
         return pdfBytes
     }
+
 
     /**
      * Recopila y prepara las estadísticas generales de la aplicación.

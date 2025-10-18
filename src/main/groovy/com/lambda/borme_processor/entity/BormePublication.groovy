@@ -13,7 +13,7 @@ class BormePublication {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id
+    private Integer id
 
     @Column(name = "publication_date", nullable = false)
     private LocalDate publicationDate

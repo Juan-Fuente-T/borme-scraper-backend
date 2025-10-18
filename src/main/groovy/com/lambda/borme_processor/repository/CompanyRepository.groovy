@@ -33,20 +33,20 @@ interface CompanyRepository extends JpaRepository<Company, Long> {
     long deleteByPublication_PublicationDate(LocalDate publicationDate)
 
     // Búsqueda avanzada (nombre, admin o inversor) con + rango de fechas
-    @Query(""" 
-        SELECT c FROM Company c 
-        WHERE (:name IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :name, '%')))
-        AND (:admin IS NULL OR LOWER(c.admin) LIKE LOWER(CONCAT('%', :admin, '%')))
-        AND (:solePartner IS NULL OR LOWER(c.solePartner) LIKE LOWER(CONCAT('%', :solePartner, '%')))
-        AND (:startDate IS NULL OR c.startDate >= :startDate)
-        AND (:endDate IS NULL OR c.startDate <= :endDate)
+    @Query("""
+         SELECT c FROM Company c
+         WHERE (:name IS NULL OR lower(c.name) LIKE :name)
+         AND (:admin IS NULL OR lower(c.admin) LIKE :admin)
+         AND (:solePartner IS NULL OR lower(c.solePartner) LIKE :solePartner)
+         AND c.startDate >= COALESCE(:startDate, c.startDate)
+     AND c.startDate <= COALESCE(:endDate, c.startDate)
     """)
     Page<Company> searchCompanies(
             @Param("name") String name,
             @Param("admin") String admin,
             @Param("solePartner") String solePartner,
-            @Param("startDate") String startDate,
-            @Param("endDate") String endDate,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
             Pageable pageable
     )
 }

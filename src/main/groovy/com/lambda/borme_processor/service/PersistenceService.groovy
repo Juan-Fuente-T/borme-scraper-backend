@@ -137,7 +137,17 @@ class PersistenceService {
             String endDate,
             Pageable pageable
     ) {
-        return companyRepository.searchCompanies(name, admin, solePartner, startDate, endDate, pageable)
+        LocalDate startDateConverted = null
+        LocalDate endDateConverted = null
+
+        if (startDate && !startDate.isEmpty()) {
+            startDateConverted = LocalDate.parse(startDate)
+        }
+        if (endDate && !endDate.isEmpty()) {
+            endDateConverted = LocalDate.parse(endDate)
+        }
+
+        return companyRepository.searchCompanies(name, admin, solePartner, startDateConverted, endDateConverted, pageable)
     }
 
     /**
