@@ -208,7 +208,7 @@ docker-compose ps
 
 ## Estructura del Proyecto
 
-
+```bash
 borme-processor/
 │
 ├── backend/ # Aplicación Spring Boot (Groovy)
@@ -247,6 +247,7 @@ borme-processor/
 ├── clean.sh # Script de limpieza
 ├── README.md
 └── ARQUITECTURA.md
+```
 
 ### Componentes Principales del Backend
 
