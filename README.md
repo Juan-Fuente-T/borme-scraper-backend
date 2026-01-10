@@ -1,5 +1,7 @@
 # Proyecto Procesador del BORME
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/61bba41e-9dc3-46d1-af9c-3c7df50924cc/deploy-status)](https://app.netlify.com/projects/borme-scraper/deploys)
+
 <image-card alt="Esquema de la Base de Datos" src="images/DetalleCompañia.png" ></image-card>
 
 Aplicación full-stack que extrae, procesa y expone datos de "Constitución de Sociedades" publicados en el **Boletín Oficial del Registro Mercantil (BORME)**.
