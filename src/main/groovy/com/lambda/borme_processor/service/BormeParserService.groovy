@@ -31,12 +31,15 @@ class BormeParserService {
             //company.pdfPath = pdfPath
 
             // === ID y nombre ===
-            def patternIdName = ~/(?m)^(\d{6})\s*-\s*(.+)/
+            //def patternIdName = ~/(?m)^(\d{6})\s*-\s*(.+)/
+            def patternIdName = ~/(?m)^(\d{1,10})\s*-\s*(.+)/
             def mIdName = patternIdName.matcher(block)
             if (mIdName.find()) {
                 company.bormeId = clean(mIdName.group(1))
                 company.name = clean(mIdName.group(2))
-            }
+            }else {
+            println "[FALLO REGEX] No encuentro ID en este bloque: " + block.take(50)
+        }
 
             // === Tipo de acto ===
             //def patternAct = ~/(?i)(Constitucion|Nombramientos|Ceses|Declaracion de unipersonalidad)/
